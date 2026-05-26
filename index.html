@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CMS Admin — La Gioia</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔧</text></svg>">
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap');
+  :root {
+    --bg:     #080604;
+    --bg2:    #0F0C08;
+    --bg3:    #171209;
+    --sf:     #221A0C;
+    --sf2:    #2E230F;
+    --br:     #3A2A12;
+    --br2:    #52391A;
+    --gold:   #C8820A;
+    --gold2:  #E49C18;
+    --cream:  #EEE2CC;
+    --t1:     #C8BA9A;
+    --t2:     #8A7658;
+    --t3:     #584A34;
+    --green:  #2EA84A;
+    --red:    #C03820;
+    --r:      4px;
+    --ease:   cubic-bezier(0.4,0,0.2,1);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 15px; -webkit-font-smoothing: antialiased; }
+  body { background: var(--bg); color: var(--t1); font-family: 'Outfit', sans-serif; font-weight: 300; min-height: 100dvh; }
+
+  /* ── Login ── */
+  #login-screen {
+    position: fixed; inset: 0; z-index: 999;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+  }
+  .login-box {
+    width: 380px; padding: 48px;
+    background: var(--bg2);
+    border: 1px solid var(--br);
+    border-radius: 12px;
+    text-align: center;
+  }
+  .login-box h1 { font-size: 1.6rem; font-weight: 600; color: var(--cream); margin-bottom: 6px; }
+  .login-box p { font-size: 0.84rem; color: var(--t2); margin-bottom: 32px; }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; text-align: left; }
+  .field label { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+  .field input {
+    background: var(--bg3); border: 1px solid var(--br); border-radius: var(--r);
+    color: var(--cream); font-family: inherit; font-size: 0.95rem; padding: 12px 16px;
+    transition: border-color 0.2s;
+  }
+  .field input:focus { outline: none; border-color: var(--gold); }
+  .btn-login {
+    width: 100%; padding: 14px; margin-top: 8px;
+    background: var(--gold); color: #080604;
+    border: none; border-radius: var(--r);
+    font-family: inherit; font-size: 0.88rem; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .btn-login:hover { background: var(--gold2); }
+  #login-error { color: var(--red); font-size: 0.82rem; margin-top: 12px; }
+
+  /* ── Layout ── */
+  #dashboard { display: none; min-height: 100dvh; }
+  .topbar {
+    background: var(--bg2); border-bottom: 1px solid var(--br);
+    padding: 0 32px; height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-logo { font-size: 1.05rem; font-weight: 600; color: var(--cream); display: flex; align-items: center; gap: 10px; }
+  .topbar-logo span { color: var(--gold); }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
+  .btn-small {
+    padding: 7px 16px; border-radius: var(--r);
+    font-family: inherit; font-size: 0.78rem; font-weight: 500; letter-spacing: 0.08em;
+    cursor: pointer; transition: all 0.2s; border: none;
+  }
+  .btn-sm-ghost { background: transparent; border: 1px solid var(--br2); color: var(--t1); }
+  .btn-sm-ghost:hover { border-color: var(--gold); color: var(--cream); }
+  .btn-sm-danger { background: transparent; border: 1px solid rgba(192,56,32,0.4); color: var(--red); }
+  .btn-sm-danger:hover { background: rgba(192,56,32,0.1); }
+
+  .main-body { display: flex; min-height: calc(100dvh - 60px); }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px; flex-shrink: 0;
+    background: var(--bg2); border-right: 1px solid var(--br);
+    padding: 24px 0;
+  }
+  .sidebar-section { margin-bottom: 8px; }
+  .sidebar-label {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--t3);
+    padding: 0 20px; margin-bottom: 4px;
+  }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 20px;
+    font-size: 0.88rem; color: var(--t2);
+    cursor: pointer; transition: all 0.18s;
+    border-left: 2px solid transparent;
+    user-select: none;
+  }
+  .sidebar-link:hover { color: var(--cream); background: var(--bg3); }
+  .sidebar-link.active { color: var(--gold2); border-left-color: var(--gold); background: var(--sf); }
+  .sidebar-link .ico { font-size: 1rem; }
+
+  /* Content */
+  .content { flex: 1; padding: 36px 40px; overflow-y: auto; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Page title */
+  .page-title { margin-bottom: 28px; }
+  .page-title h2 { font-size: 1.5rem; font-weight: 600; color: var(--cream); }
+  .page-title p { font-size: 0.86rem; color: var(--t2); margin-top: 4px; }
+
+  /* ── Menu CMS ── */
+  .menu-cms { display: grid; grid-template-columns: 280px 1fr; gap: 24px; }
+  @media (max-width: 900px) { .menu-cms { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--bg2); border: 1px solid var(--br);
+    border-radius: 10px; overflow: hidden;
+  }
+  .panel-head {
+    padding: 16px 20px; border-bottom: 1px solid var(--br);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-head h3 { font-size: 0.82rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }
+  .panel-body { padding: 12px; }
+
+  /* Category list */
+  .cat-list { display: flex; flex-direction: column; gap: 2px; }
+  .cat-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 10px 12px; border-radius: var(--r); cursor: pointer;
+    transition: background 0.15s; font-size: 0.9rem; color: var(--t1);
+    border: 1px solid transparent;
+  }
+  .cat-item:hover { background: var(--bg3); }
+  .cat-item.selected { background: var(--sf); border-color: var(--br2); color: var(--cream); }
+  .cat-item-name { flex: 1; }
+  .cat-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+  .cat-item:hover .cat-actions { opacity: 1; }
+  .icon-btn {
+    width: 26px; height: 26px; border-radius: 4px; border: none;
+    background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; color: var(--t2); transition: all 0.15s;
+  }
+  .icon-btn:hover { background: var(--sf2); color: var(--cream); }
+  .icon-btn.danger:hover { background: rgba(192,56,32,0.15); color: var(--red); }
+
+  /* Items list */
+  .items-list { display: flex; flex-direction: column; gap: 2px; }
+  .item-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; border-radius: var(--r);
+    border: 1px solid transparent; transition: all 0.15s;
+    background: var(--bg3);
+  }
+  .item-row:hover { border-color: var(--br); }
+  .item-row.unavail { opacity: 0.45; }
+  .item-info { flex: 1; min-width: 0; }
+  .item-name-r { font-size: 0.92rem; font-weight: 500; color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-desc-r { font-size: 0.78rem; color: var(--t2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-price-r { font-size: 0.9rem; color: var(--gold2); font-weight: 500; white-space: nowrap; }
+  .toggle-btn {
+    width: 36px; height: 20px; border-radius: 10px;
+    background: var(--br2); border: none; cursor: pointer;
+    position: relative; flex-shrink: 0; transition: background 0.2s;
+  }
+  .toggle-btn.on { background: var(--green); }
+  .toggle-btn::after {
+    content: ''; position: absolute;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: white; top: 3px; left: 3px;
+    transition: transform 0.2s;
+  }
+  .toggle-btn.on::after { transform: translateX(16px); }
+  .item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(8,6,4,0.85); backdrop-filter: blur(6px);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    width: 100%; max-width: 520px;
+    background: var(--bg2); border: 1px solid var(--br2);
+    border-radius: 12px; overflow: hidden;
+  }
+  .modal-header {
+    padding: 20px 24px; border-bottom: 1px solid var(--br);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-header h3 { font-size: 1rem; font-weight: 600; color: var(--cream); }
+  .modal-body { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--br); display: flex; gap: 10px; justify-content: flex-end; }
+
+  .form-row { display: flex; flex-direction: column; gap: 6px; }
+  .form-row label { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+  .form-row input, .form-row textarea {
+    background: var(--bg3); border: 1px solid var(--br); border-radius: var(--r);
+    color: var(--cream); font-family: inherit; font-size: 0.92rem; padding: 10px 14px;
+    transition: border-color 0.2s; resize: vertical;
+  }
+  .form-row input:focus, .form-row textarea:focus { outline: none; border-color: var(--gold); }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .btn-primary-sm {
+    padding: 10px 22px; background: var(--gold); color: #080604;
+    border: none; border-radius: var(--r);
+    font-family: inherit; font-size: 0.84rem; font-weight: 600; cursor: pointer; transition: background 0.2s;
+  }
+  .btn-primary-sm:hover { background: var(--gold2); }
+  .btn-secondary-sm {
+    padding: 10px 22px; background: transparent; color: var(--t1);
+    border: 1px solid var(--br2); border-radius: var(--r);
+    font-family: inherit; font-size: 0.84rem; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-secondary-sm:hover { border-color: var(--gold); color: var(--cream); }
+
+  /* ── Settings ── */
+  .settings-grid { display: grid; gap: 24px; max-width: 680px; }
+  .settings-card { background: var(--bg2); border: 1px solid var(--br); border-radius: 10px; padding: 24px 28px; }
+  .settings-card h3 { font-size: 0.82rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); margin-bottom: 20px; }
+  .settings-fields { display: flex; flex-direction: column; gap: 14px; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+    background: var(--sf2); border: 1px solid var(--br2); border-radius: 8px;
+    padding: 14px 20px; font-size: 0.88rem; color: var(--cream);
+    display: flex; align-items: center; gap: 10px;
+    transform: translateY(80px); opacity: 0; transition: all 0.3s var(--ease);
+    pointer-events: none;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.success { border-color: var(--green); }
+  #toast.error { border-color: var(--red); }
+
+  /* ── Empty state ── */
+  .empty-state { text-align: center; padding: 48px 24px; color: var(--t3); }
+  .empty-state .ico { font-size: 2.5rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.88rem; }
+
+  /* Divider */
+  hr { border: none; border-top: 1px solid var(--br); margin: 8px 0; }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ──────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>🍕 La Gioia</h1>
+    <p>Pannello di amministrazione</p>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="pwd-input" placeholder="Inserisci la password" autocomplete="current-password">
+    </div>
+    <button class="btn-login" id="login-btn">Accedi</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ───────────────────────────────────────────────── -->
+<div id="dashboard">
+  <div class="topbar">
+    <div class="topbar-logo">🍕 <span>La Gioia</span> — CMS</div>
+    <div class="topbar-right">
+      <a href="../index.html" target="_blank" class="btn-small btn-sm-ghost">↗ Vedi sito</a>
+      <button class="btn-small btn-sm-danger" id="logout-btn">Esci</button>
+    </div>
+  </div>
+
+  <div class="main-body">
+    <nav class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Gestione</div>
+        <div class="sidebar-link active" data-tab="menu"><span class="ico">🍕</span> Menù</div>
+        <div class="sidebar-link" data-tab="settings"><span class="ico">⚙️</span> Impostazioni</div>
+      </div>
+      <hr style="margin:16px 0;border-color:var(--br);">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Pagine</div>
+        <a href="../index.html" target="_blank" class="sidebar-link"><span class="ico">🏠</span> Home</a>
+        <a href="../il-menu.html" target="_blank" class="sidebar-link"><span class="ico">📋</span> Il Menù</a>
+        <a href="../contatti.html" target="_blank" class="sidebar-link"><span class="ico">📞</span> Contatti</a>
+      </div>
+    </nav>
+
+    <main class="content">
+
+      <!-- ═══ TAB: MENU ═══ -->
+      <div class="tab-panel active" id="tab-menu">
+        <div class="page-title">
+          <h2>Gestione Menù</h2>
+          <p>Aggiungi, modifica o rimuovi categorie e prodotti. Le modifiche sono live immediatamente sul sito.</p>
+        </div>
+
+        <div id="menu-no-supabase" style="display:none;">
+          <div style="background:rgba(192,130,10,0.1);border:1px solid rgba(192,130,10,0.3);border-radius:8px;padding:20px 24px;margin-bottom:24px;">
+            <p style="font-size:0.88rem;color:var(--t1);">⚠️ <strong style="color:var(--cream);">Supabase non configurato.</strong> Per abilitare il CMS del menù, configura <code>SUPABASE_URL</code> e <code>SUPABASE_KEY</code> in <code>js/config.js</code> e importa lo schema SQL. Il menù del sito usa dati statici di default.</p>
+          </div>
+        </div>
+
+        <div class="menu-cms">
+          <!-- Categorie -->
+          <div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3>Categorie</h3>
+                <button class="btn-small btn-sm-ghost" id="btn-add-cat">+ Nuova</button>
+              </div>
+              <div class="panel-body">
+                <div class="cat-list" id="cat-list">
+                  <div class="empty-state"><div class="ico">📂</div><p>Caricamento...</p></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Prodotti -->
+          <div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3 id="items-panel-title">Seleziona una categoria</h3>
+                <button class="btn-small btn-sm-ghost" id="btn-add-item" style="display:none;">+ Nuovo prodotto</button>
+              </div>
+              <div class="panel-body">
+                <div class="items-list" id="items-list">
+                  <div class="empty-state"><div class="ico">👈</div><p>Seleziona una categoria a sinistra</p></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ TAB: SETTINGS ═══ -->
+      <div class="tab-panel" id="tab-settings">
+        <div class="page-title">
+          <h2>Impostazioni</h2>
+          <p>Modifica i dati di contatto, gli orari e la password. Le modifiche si aggiornano su tutto il sito.</p>
+        </div>
+
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h3>📞 Contatti & Orari</h3>
+            <div class="settings-fields">
+              <div class="form-row"><label>Telefono principale</label><input type="tel" id="s-phone" placeholder="+39 010 4556699"></div>
+              <div class="form-row"><label>Numero WhatsApp</label><input type="tel" id="s-wa" placeholder="+39 333 332 3663"></div>
+              <div class="form-row"><label>Email</label><input type="email" id="s-email" placeholder="email@example.com"></div>
+              <div class="form-row"><label>Indirizzo</label><input type="text" id="s-address" placeholder="Corso Matteotti 38, Arenzano"></div>
+              <div class="form-row"><label>Orari di apertura</label><input type="text" id="s-hours" placeholder="Lun – Dom  12:00 – 23:30"></div>
+              <button class="btn-primary-sm" id="save-settings-btn" style="margin-top:8px;width:fit-content;">Salva impostazioni</button>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <h3>🔑 Cambia password</h3>
+            <p style="font-size:0.84rem;color:var(--t2);margin-bottom:20px;">Dopo aver cambiato la password, aggiornala anche nel file <code>js/config.js</code> e re-deploya su Vercel.</p>
+            <div class="settings-fields">
+              <div class="form-row"><label>Password attuale</label><input type="password" id="pwd-current" autocomplete="current-password"></div>
+              <div class="form-row"><label>Nuova password</label><input type="password" id="pwd-new" autocomplete="new-password"></div>
+              <div class="form-row"><label>Conferma nuova password</label><input type="password" id="pwd-confirm" autocomplete="new-password"></div>
+              <button class="btn-primary-sm" id="change-pwd-btn" style="margin-top:8px;width:fit-content;">Aggiorna password</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── MODALI ──────────────────────────────────────────────────── -->
+
+<!-- Modal categoria -->
+<div class="modal-overlay" id="modal-cat">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-cat-title">Nuova categoria</h3>
+      <button class="icon-btn" onclick="closeModal('modal-cat')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cat-edit-id">
+      <div class="form-row"><label>Nome categoria</label><input type="text" id="cat-name-input" placeholder="es. Le Pizze"></div>
+      <div class="form-row"><label>Ordine (numero)</label><input type="number" id="cat-order-input" placeholder="1" min="0"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary-sm" onclick="closeModal('modal-cat')">Annulla</button>
+      <button class="btn-primary-sm" id="save-cat-btn">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal prodotto -->
+<div class="modal-overlay" id="modal-item">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-item-title">Nuovo prodotto</h3>
+      <button class="icon-btn" onclick="closeModal('modal-item')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="item-edit-id">
+      <div class="form-row"><label>Nome prodotto</label><input type="text" id="item-name-input" placeholder="es. Margherita"></div>
+      <div class="form-row"><label>Descrizione / ingredienti</label><textarea id="item-desc-input" rows="3" placeholder="pomodoro, mozzarella fiordilatte, basilico"></textarea></div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Prezzo (€)</label><input type="number" id="item-price-input" placeholder="8.50" min="0" step="0.5"></div>
+        <div class="form-row"><label>Ordine</label><input type="number" id="item-order-input" placeholder="0" min="0"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary-sm" onclick="closeModal('modal-item')">Annulla</button>
+      <button class="btn-primary-sm" id="save-item-btn">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script src="../js/config.js"></script>
+<script>
+// ================================================================
+// ADMIN CMS — La Gioia
+// ================================================================
+
+const SB_URL = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '';
+const SB_KEY = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : '';
+const SB_OK  = SB_URL && !SB_URL.includes('TUOPROJECT');
+
+let selectedCatId = null;
+let cats = [];
+let items = [];
+
+// ── Auth ──────────────────────────────────────────────────────────
+const isLoggedIn = () => sessionStorage.getItem('lg_admin') === '1';
+
+document.getElementById('login-btn').addEventListener('click', doLogin);
+document.getElementById('pwd-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+function doLogin() {
+  const val = document.getElementById('pwd-input').value;
+  const pwd = typeof ADMIN_PASSWORD !== 'undefined' ? ADMIN_PASSWORD : 'lagioia2025';
+  if (val === pwd) {
+    sessionStorage.setItem('lg_admin','1');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    init();
+  } else {
+    document.getElementById('login-error').textContent = 'Password errata. Riprova.';
+  }
+}
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+  sessionStorage.removeItem('lg_admin');
+  location.reload();
+});
+
+// ── Init ──────────────────────────────────────────────────────────
+function init() {
+  if (isLoggedIn()) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+  } else { return; }
+
+  initTabs();
+  if (!SB_OK) {
+    document.getElementById('menu-no-supabase').style.display = 'block';
+  }
+  loadCategories();
+  loadSettingsForm();
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────
+function initTabs() {
+  document.querySelectorAll('.sidebar-link[data-tab]').forEach(link => {
+    link.addEventListener('click', () => {
+      document.querySelectorAll('.sidebar-link[data-tab]').forEach(l => l.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      link.classList.add('active');
+      document.getElementById('tab-' + link.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+// ── Supabase helpers ──────────────────────────────────────────────
+const SBH = () => ({ apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' });
+
+async function sbGet(table, params='') {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers: SBH() });
+  return r.ok ? r.json() : [];
+}
+async function sbPost(table, body) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`, { method:'POST', headers: SBH(), body: JSON.stringify(body) });
+  return r.ok ? r.json() : null;
+}
+async function sbPatch(table, id, body) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, { method:'PATCH', headers: SBH(), body: JSON.stringify(body) });
+  return r.ok;
+}
+async function sbDelete(table, id) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, { method:'DELETE', headers: SBH() });
+  return r.ok;
+}
+async function sbUpsert(table, body) {
+  const headers = { ...SBH(), Prefer: 'resolution=merge-duplicates,return=representation' };
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`, { method:'POST', headers, body: JSON.stringify(body) });
+  return r.ok;
+}
+
+// ── Categories ────────────────────────────────────────────────────
+async function loadCategories() {
+  if (!SB_OK) { renderCatList([]); return; }
+  cats = await sbGet('menu_categories', 'select=*&order=sort_order');
+  renderCatList(cats);
+}
+
+function renderCatList(list) {
+  const el = document.getElementById('cat-list');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state"><div class="ico">📂</div><p>${SB_OK ? 'Nessuna categoria. Aggiungine una!' : 'Configura Supabase per gestire il menù'}</p></div>`;
+    return;
+  }
+  el.innerHTML = '';
+  list.forEach(cat => {
+    const div = document.createElement('div');
+    div.className = 'cat-item' + (cat.id === selectedCatId ? ' selected' : '');
+    div.dataset.id = cat.id;
+    div.innerHTML = `
+      <span class="cat-item-name">${cat.name}</span>
+      <div class="cat-actions">
+        <button class="icon-btn" title="Modifica" onclick="editCat('${cat.id}','${escHtml(cat.name)}',${cat.sort_order||0})">✏️</button>
+        <button class="icon-btn danger" title="Elimina" onclick="deleteCat('${cat.id}')">🗑️</button>
+      </div>`;
+    div.addEventListener('click', e => {
+      if (e.target.closest('.icon-btn')) return;
+      selectCat(cat.id, cat.name);
+    });
+    el.appendChild(div);
+  });
+}
+
+function selectCat(id, name) {
+  selectedCatId = id;
+  document.querySelectorAll('.cat-item').forEach(c => c.classList.toggle('selected', c.dataset.id === id));
+  document.getElementById('items-panel-title').textContent = name;
+  document.getElementById('btn-add-item').style.display = 'inline-flex';
+  loadItems(id);
+}
+
+document.getElementById('btn-add-cat').addEventListener('click', () => {
+  document.getElementById('cat-edit-id').value = '';
+  document.getElementById('cat-name-input').value = '';
+  document.getElementById('cat-order-input').value = (cats.length + 1).toString();
+  document.getElementById('modal-cat-title').textContent = 'Nuova categoria';
+  openModal('modal-cat');
+});
+
+function editCat(id, name, order) {
+  document.getElementById('cat-edit-id').value = id;
+  document.getElementById('cat-name-input').value = name;
+  document.getElementById('cat-order-input').value = order;
+  document.getElementById('modal-cat-title').textContent = 'Modifica categoria';
+  openModal('modal-cat');
+}
+
+async function deleteCat(id) {
+  if (!confirm('Eliminare questa categoria e tutti i suoi prodotti?')) return;
+  const ok = await sbDelete('menu_categories', id);
+  if (ok) { toast('Categoria eliminata',true); if(selectedCatId===id){selectedCatId=null;document.getElementById('items-list').innerHTML='<div class="empty-state"><div class="ico">👈</div><p>Seleziona una categoria</p></div>';document.getElementById('btn-add-item').style.display='none';}loadCategories(); }
+  else toast('Errore durante l\'eliminazione', false);
+}
+
+document.getElementById('save-cat-btn').addEventListener('click', async () => {
+  const id = document.getElementById('cat-edit-id').value;
+  const name = document.getElementById('cat-name-input').value.trim();
+  const order = parseInt(document.getElementById('cat-order-input').value)||0;
+  if (!name) { toast('Inserisci un nome',false); return; }
+  if (!SB_OK) { toast('Configura Supabase prima',false); return; }
+  let ok;
+  if (id) { ok = await sbPatch('menu_categories', id, {name, sort_order:order}); }
+  else { const res = await sbPost('menu_categories', {name, sort_order:order}); ok = !!res; }
+  if (ok) { toast('Categoria salvata',true); closeModal('modal-cat'); loadCategories(); }
+  else toast('Errore salvataggio', false);
+});
+
+// ── Items ─────────────────────────────────────────────────────────
+async function loadItems(catId) {
+  if (!SB_OK) { renderItemList([]); return; }
+  items = await sbGet('menu_items', `select=*&category_id=eq.${catId}&order=sort_order`);
+  renderItemList(items);
+}
+
+function renderItemList(list) {
+  const el = document.getElementById('items-list');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state"><div class="ico">🍕</div><p>${SB_OK ? 'Nessun prodotto. Aggiungine uno!' : 'Configura Supabase'}</p></div>`;
+    return;
+  }
+  el.innerHTML = '';
+  list.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'item-row' + (item.available===false?' unavail':'');
+    const price = item.price ? `€${Number(item.price).toFixed(2).replace('.',',')}` : '—';
+    div.innerHTML = `
+      <div class="item-info">
+        <div class="item-name-r">${escHtml(item.name)}</div>
+        ${item.description ? `<div class="item-desc-r">${escHtml(item.description)}</div>` : ''}
+      </div>
+      <span class="item-price-r">${price}</span>
+      <button class="toggle-btn ${item.available!==false?'on':''}" title="${item.available!==false?'Disponibile':'Non disponibile'}" onclick="toggleItem('${item.id}',${item.available!==false})"></button>
+      <div class="item-actions">
+        <button class="icon-btn" title="Modifica" onclick="editItem('${item.id}')">✏️</button>
+        <button class="icon-btn danger" title="Elimina" onclick="deleteItem('${item.id}')">🗑️</button>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+document.getElementById('btn-add-item').addEventListener('click', () => {
+  if (!selectedCatId) return;
+  document.getElementById('item-edit-id').value = '';
+  document.getElementById('item-name-input').value = '';
+  document.getElementById('item-desc-input').value = '';
+  document.getElementById('item-price-input').value = '';
+  document.getElementById('item-order-input').value = (items.length+1).toString();
+  document.getElementById('modal-item-title').textContent = 'Nuovo prodotto';
+  openModal('modal-item');
+});
+
+function editItem(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  document.getElementById('item-edit-id').value = item.id;
+  document.getElementById('item-name-input').value = item.name;
+  document.getElementById('item-desc-input').value = item.description||'';
+  document.getElementById('item-price-input').value = item.price||'';
+  document.getElementById('item-order-input').value = item.sort_order||0;
+  document.getElementById('modal-item-title').textContent = 'Modifica prodotto';
+  openModal('modal-item');
+}
+
+async function toggleItem(id, currentlyAvailable) {
+  const ok = await sbPatch('menu_items', id, {available: !currentlyAvailable});
+  if (ok) { toast(currentlyAvailable ? 'Prodotto disattivato' : 'Prodotto attivato', true); loadItems(selectedCatId); }
+  else toast('Errore', false);
+}
+
+async function deleteItem(id) {
+  if (!confirm('Eliminare questo prodotto?')) return;
+  const ok = await sbDelete('menu_items', id);
+  if (ok) { toast('Prodotto eliminato', true); loadItems(selectedCatId); }
+  else toast('Errore', false);
+}
+
+document.getElementById('save-item-btn').addEventListener('click', async () => {
+  const id = document.getElementById('item-edit-id').value;
+  const name = document.getElementById('item-name-input').value.trim();
+  const description = document.getElementById('item-desc-input').value.trim();
+  const price = parseFloat(document.getElementById('item-price-input').value)||null;
+  const sort_order = parseInt(document.getElementById('item-order-input').value)||0;
+  if (!name) { toast('Inserisci il nome prodotto', false); return; }
+  if (!SB_OK) { toast('Configura Supabase prima', false); return; }
+  let ok;
+  if (id) { ok = await sbPatch('menu_items', id, {name, description, price, sort_order}); }
+  else { const res = await sbPost('menu_items', {name, description, price, sort_order, category_id: selectedCatId, available: true}); ok = !!res; }
+  if (ok) { toast('Prodotto salvato', true); closeModal('modal-item'); loadItems(selectedCatId); }
+  else toast('Errore salvataggio', false);
+});
+
+// ── Settings ──────────────────────────────────────────────────────
+const SETTING_DEFAULTS = {
+  phone_main:'+39 010 4556699', phone_whatsapp:'+39 333 332 3663',
+  email:'adw_elking@yahoo.com', address:'Corso Giacomo Matteotti, 38 — 16011 Arenzano (GE)',
+  hours:'Lun – Dom  12:00 – 23:30'
+};
+
+async function loadSettingsForm() {
+  const map = { phone_main:'s-phone', phone_whatsapp:'s-wa', email:'s-email', address:'s-address', hours:'s-hours' };
+  Object.entries(SETTING_DEFAULTS).forEach(([k,v]) => { const el=document.getElementById(map[k]); if(el) el.value=v; });
+  if (!SB_OK) return;
+  try {
+    const rows = await sbGet('site_settings','select=key,value');
+    rows.forEach(r => { const el=document.getElementById(map[r.key]); if(el) el.value=r.value; });
+  } catch(_) {}
+}
+
+document.getElementById('save-settings-btn').addEventListener('click', async () => {
+  if (!SB_OK) { toast('Configura Supabase per salvare le impostazioni', false); return; }
+  const data = [
+    {key:'phone_main',    value: document.getElementById('s-phone').value.trim()},
+    {key:'phone_whatsapp',value: document.getElementById('s-wa').value.trim()},
+    {key:'email',         value: document.getElementById('s-email').value.trim()},
+    {key:'address',       value: document.getElementById('s-address').value.trim()},
+    {key:'hours',         value: document.getElementById('s-hours').value.trim()},
+  ];
+  const ok = await sbUpsert('site_settings', data);
+  if (ok) toast('Impostazioni salvate! 🎉', true);
+  else toast('Errore nel salvataggio', false);
+});
+
+document.getElementById('change-pwd-btn').addEventListener('click', () => {
+  const cur = document.getElementById('pwd-current').value;
+  const nw = document.getElementById('pwd-new').value;
+  const conf = document.getElementById('pwd-confirm').value;
+  const pwd = typeof ADMIN_PASSWORD !== 'undefined' ? ADMIN_PASSWORD : 'lagioia2025';
+  if (cur !== pwd) { toast('Password attuale errata', false); return; }
+  if (!nw || nw.length < 6) { toast('La nuova password deve essere lunga almeno 6 caratteri', false); return; }
+  if (nw !== conf) { toast('Le password non coincidono', false); return; }
+  toast(`✅ Ora aggiorna ADMIN_PASSWORD="${nw}" in js/config.js e rideploya su Vercel`, true);
+  document.getElementById('pwd-current').value='';
+  document.getElementById('pwd-new').value='';
+  document.getElementById('pwd-confirm').value='';
+});
+
+// ── Modals ────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); });
+});
+
+// ── Toast ─────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg, ok=true) {
+  const el = document.getElementById('toast');
+  el.textContent = (ok?'✓ ':'✗ ') + msg;
+  el.className = 'show ' + (ok?'success':'error');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className='', 3200);
+}
+
+// ── Utils ─────────────────────────────────────────────────────────
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Boot ──────────────────────────────────────────────────────────
+if (isLoggedIn()) init();
+</script>
+</body>
+</html>
